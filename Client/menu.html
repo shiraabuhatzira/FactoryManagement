@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="loadUserInfo()">
+    <div class="container">
+        <h1 id="welcomeMessage">Welcome</h1> 
+
+        <!-- Navigation Buttons -->
+        <div class="button-container">
+            <button onclick="navigateToPage('users.html')">Users Page</button>
+            <button onclick="navigateToPage('departments.html')">Departments Page</button>
+            <button onclick="navigateToPage('employees.html')">Employees Page</button>
+            <button onclick="navigateToPage('shifts.html')">Shifts Page</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Loads user information to display a welcome message.
+         */
+        function loadUserInfo() {
+            const fullName = sessionStorage.getItem("fullName");
+            document.getElementById("welcomeMessage").innerText = `Welcome, ${fullName}!`;
+        }
+
+        /**
+         * Navigates to a specific page.
+         * @param {string} page - The page to navigate to.
+         */
+        function navigateToPage(page) {
+            window.location.href = page;
+        }
+    </script>
+</body>
+</html>

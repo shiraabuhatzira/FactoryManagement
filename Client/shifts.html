@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shifts</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="getShifts()">
+    <div class="container">
+        <h1>Shifts</h1>
+        <h2 id="fullName"></h2>
+
+        <a href="menu.html">Back to Menu</a>
+
+        <!-- Form to create a new shift -->
+        <form id="newShiftForm">
+            <input id="shiftDate" type="date" required> <br>
+            <input id="startingHour" type="number" placeholder="Starting Hour" required> <br>
+            <input id="endingHour" type="number" placeholder="Ending Hour" required> <br>
+            <button type="button" onclick="createShift()">Create Shift</button>
+        </form>
+
+        <br>
+        <h2 id="editShiftHeader" style="display:none;">Edit Shift</h2>
+        <form id="editShiftForm" style="display:none;">
+            <!-- Hidden input to store the shift ID -->
+            <input id="editShiftId" type="hidden">
+            <input id="editShiftDate" type="date" required> <br>
+            <input id="editStartingHour" type="number" placeholder="Starting Hour" required> <br>
+            <input id="editEndingHour" type="number" placeholder="Ending Hour" required> <br>
+            <button type="button" onclick="updateShift()">Update Shift</button>
+            <select id="employeeDropdown"></select> <br>
+            <button type="button" onclick="addEmployeeToShift()">Add Employee to Shift</button>
+        </form>
+
+        <table id="shiftsTable">
+            <tr>
+                <th>Date</th>
+                <th>Starting Hour</th>
+                <th>Ending Hour</th>
+                <th>Employees</th>
+                <th>Actions</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        /**
+         * Function to get the list of shifts from the server and display them in the table.
+         */
+        async function getShifts() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const token = sessionStorage.getItem("token"); 
+
+            if (!token) {
+                window.location.href = "./login.html";
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/shifts", {
+                    method: "GET", 
+                    headers: { "x-access-token": token } 
+                });
+
+                const shifts = await response.json(); 
+                addShiftsToTable(shifts); 
+                loadEmployees(); 
+            } catch (err) {
+                console.log(err.message); 
+            }
+        }
+
+        /**
+         * Function to add the list of shifts to the table.
+         * @param {Array} shifts - The list of shifts to add to the table.
+         */
+        function addShiftsToTable(shifts) {
+            const shiftsTable = document.getElementById("shiftsTable"); 
+            shiftsTable.innerHTML = `
+                <tr>
+                    <th>Date</th>
+                    <th>Starting Hour</th>
+                    <th>Ending Hour</th>
+                    <th>Employees</th>
+                    <th>Actions</th>
+                </tr>
+            `; 
+
+            shifts.forEach(shift => { 
+                const shiftTr = document.createElement("tr"); 
+
+                const shiftTdDate = document.createElement("td"); 
+                const shiftTdStartingHour = document.createElement("td"); 
+                const shiftTdEndingHour = document.createElement("td"); 
+                const shiftTdEmployees = document.createElement("td"); 
+                const shiftTdActions = document.createElement("td"); 
+
+                shiftTdDate.innerText = new Date(shift.date).toLocaleDateString(); 
+                shiftTdStartingHour.innerText = shift.startingHour; 
+                shiftTdEndingHour.innerText = shift.endingHour; 
+
+                shiftTdEmployees.innerHTML = shift.employees.map(employee => { 
+                    return `<div>${employee.firstName} ${employee.lastName}</div>`; 
+                }).join(""); 
+
+                const editButton = document.createElement("button");
+                editButton.innerText = "Edit";
+                editButton.onclick = () => loadShiftForEdit(shift); 
+                shiftTdActions.appendChild(editButton); 
+
+                shiftTr.appendChild(shiftTdDate); 
+                shiftTr.appendChild(shiftTdStartingHour); 
+                shiftTr.appendChild(shiftTdEndingHour); 
+                shiftTr.appendChild(shiftTdEmployees); 
+                shiftTr.appendChild(shiftTdActions); 
+
+                shiftsTable.appendChild(shiftTr); 
+            });
+        }
+
+        /**
+         * Function to create a new shift by sending a POST request to the server.
+         */
+        async function createShift() {
+            const date = document.getElementById("shiftDate").value; 
+            const startingHour = document.getElementById("startingHour").value; 
+            const endingHour = document.getElementById("endingHour").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch("http://localhost:8000/shifts", {
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ date, startingHour, endingHour }) 
+            });
+
+            window.location.href = "./shifts.html"; 
+        }
+
+        /**
+         * Function to load the employees for the dropdown.
+         */
+        async function loadEmployees() {
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/employees", {
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const employees = await response.json(); 
+            const employeeDropdown = document.getElementById("employeeDropdown"); 
+            employees.forEach(employee => { 
+                const option = document.createElement("option"); 
+                option.value = employee._id; 
+                option.textContent = `${employee.firstName} ${employee.lastName}`; 
+                employeeDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Function to load a shift's data into the edit form for editing.
+         * @param {Object} shift - The shift to be edited.
+         */
+        function loadShiftForEdit(shift) {
+            document.getElementById("editShiftHeader").style.display = "block"; 
+            document.getElementById("editShiftId").value = shift._id; 
+            document.getElementById("editShiftDate").value = shift.date.split("T")[0]; 
+            document.getElementById("editStartingHour").value = shift.startingHour; 
+            document.getElementById("editEndingHour").value = shift.endingHour; 
+            document.getElementById("editShiftForm").style.display = "block"; 
+        }
+
+        /**
+         * Function to update a shift by sending a PUT request to the server.
+         */
+        async function updateShift() {
+            const id = document.getElementById("editShiftId").value; 
+            const date = document.getElementById("editShiftDate").value; 
+            const startingHour = document.getElementById("editStartingHour").value; 
+            const endingHour = document.getElementById("editEndingHour").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/shifts/${id}`, {
+                method: "PUT", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ date, startingHour, endingHour }) 
+            });
+
+            window.location.href = "./shifts.html"; 
+        }
+
+        /**
+         * Function to add an employee to a shift by sending a POST request to the server.
+         */
+        async function addEmployeeToShift() {
+            const id = document.getElementById("editShiftId").value; 
+            const employeeId = document.getElementById("employeeDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/shifts/${id}/employees`, {
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ employeeId }) 
+            });
+
+            window.location.href = "./shifts.html"; 
+        }
+    </script>
+
+</body>
+</html>

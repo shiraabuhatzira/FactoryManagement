@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Edit Employee</title> 
+    <link rel="stylesheet" href="styles.css"> 
+</head>
+<body onload="loadEmployeeData()">
+
+    <div class="container"> 
+        <h1 id="fullName"></h1> 
+
+        <form> 
+            <input id="firstName" type="text" placeholder="First Name"> <br> 
+            <input id="lastName" type="text" placeholder="Last Name"> <br> 
+            <input id="startWorkYear" type="number" placeholder="Start Work Year"> <br> 
+            <select id="departmentDropdown"></select> <br> 
+            <button type="button" onclick="updateEmployee()">Update</button> 
+            <button type="button" onclick="deleteEmployee()">Delete</button> 
+        </form>
+
+        <h2>Shifts</h2> 
+        <table id="shiftsTable"> 
+            <tr>
+                <th>Date</th> 
+                <th>Starting Hour</th> 
+                <th>Ending Hour</th> 
+            </tr>
+        </table>
+
+        <select id="shiftDropdown"></select> <br> 
+        <button onclick="addShiftToEmployee()">Add Shift</button> 
+    </div>
+
+    <script>
+        /**
+         * Loads employee data from the server and populates the form fields and shifts table.
+         */
+        async function loadEmployeeData() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const employeeId = sessionStorage.getItem("employeeId"); 
+            if (!employeeId) { 
+                window.location.href = "./employees.html"; 
+            }
+
+            const token = sessionStorage.getItem("token");
+            const response = await fetch(`http://localhost:8000/employees/${employeeId}`, { 
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const employee = await response.json(); 
+            document.getElementById("firstName").value = employee.firstName; 
+            document.getElementById("lastName").value = employee.lastName; 
+            document.getElementById("startWorkYear").value = employee.startWorkYear; 
+            await loadDepartments(employee.departmentID ? employee.departmentID._id : null); 
+            addShiftsToTable(employee.shifts); 
+            await loadShifts(); 
+        }
+
+        /**
+         * Loads the list of departments and populates the department dropdown.
+         * @param {string} selectedDepartmentId - The ID of the employee's current department.
+         */
+        async function loadDepartments(selectedDepartmentId) {
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/departments", { 
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const departments = await response.json(); 
+            const departmentDropdown = document.getElementById("departmentDropdown"); 
+            departments.forEach(department => { 
+                const option = document.createElement("option"); 
+                option.value = department._id; 
+                option.textContent = department.name; 
+                if (department._id === selectedDepartmentId) {
+                    option.selected = true; 
+                }
+                departmentDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Updates the employee data on the server.
+         */
+        async function updateEmployee() {
+            const employeeId = sessionStorage.getItem("employeeId"); 
+            const firstName = document.getElementById("firstName").value; 
+            const lastName = document.getElementById("lastName").value; 
+            const startWorkYear = document.getElementById("startWorkYear").value; 
+            const departmentID = document.getElementById("departmentDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/employees/${employeeId}`, { 
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ firstName, lastName, startWorkYear, departmentID }) 
+            });
+
+            window.location.href = "./employees.html"; 
+        }
+
+        /**
+         * Deletes the employee from the server.
+         */
+        async function deleteEmployee() {
+            const employeeId = sessionStorage.getItem("employeeId"); 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/employees/${employeeId}`, { 
+                method: "DELETE", 
+                headers: { "x-access-token": token } 
+            });
+
+            window.location.href = "./employees.html"; 
+        }
+
+        /**
+         * Loads the list of all available shifts and populates the shift dropdown.
+         */
+        async function loadShifts() {
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/shifts", { 
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const shifts = await response.json(); 
+            const shiftDropdown = document.getElementById("shiftDropdown"); 
+            shifts.forEach(shift => {
+                const option = document.createElement("option"); 
+                option.value = shift._id; 
+                option.textContent = `${new Date(shift.date).toLocaleDateString()} ${shift.startingHour}:00 - ${shift.endingHour}:00`; // Set the option's text content to the shift details.
+                shiftDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Adds a selected shift to the employee on the server.
+         */
+        async function addShiftToEmployee() {
+            const employeeId = sessionStorage.getItem("employeeId"); 
+            const shiftId = document.getElementById("shiftDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/employees/${employeeId}/shifts`, { 
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ shiftId }) 
+            });
+
+            window.location.href = "./employees.html"; 
+        }
+
+        /**
+         * Populates the shifts table with the provided shift data.
+         * @param {Array} shifts - The list of shifts to display.
+         */
+        function addShiftsToTable(shifts) {
+            const shiftsTable = document.getElementById("shiftsTable"); 
+            shifts.forEach(shift => { 
+                const shiftTr = document.createElement("tr"); 
+
+                const shiftTdDate = document.createElement("td"); 
+                const shiftTdStartingHour = document.createElement("td"); 
+                const shiftTdEndingHour = document.createElement("td"); 
+
+                shiftTdDate.innerText = new Date(shift.date).toLocaleDateString(); 
+                shiftTdStartingHour.innerText = shift.startingHour; 
+                shiftTdEndingHour.innerText = shift.endingHour; 
+
+                shiftTr.appendChild(shiftTdDate); 
+                shiftTr.appendChild(shiftTdStartingHour); 
+                shiftTr.appendChild(shiftTdEndingHour);
+
+                shiftsTable.appendChild(shiftTr); 
+            });
+        }
+    </script>
+
+</body>
+</html>

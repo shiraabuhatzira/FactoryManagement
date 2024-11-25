@@ -1,0 +1,49 @@
+FactoryManagement
+│
+├── Configs
+│   └── database.js                        V
+│
+├── Models
+│   ├── userModel.js                       V
+│   ├── departmentModel.js                 V
+│   ├── employeeModel.js                   V
+│   └── shiftModel.js                      V
+│
+├── Repositories
+│   ├── userRepository.js                  V
+│   ├── departmentRepository.js            V
+│   ├── employeeRepository.js              V
+│   └── shiftRepository.js                 V
+│
+├── Services
+│   ├── authService.js                     V
+│   ├── userService.js                     V
+│   ├── departmentService.js               V
+│   ├── employeeService.js                 V
+│   ├── shiftService.js                    V
+│   └── actionLogger.js                    V
+│
+├── Middlewares
+│   └── checkActionMiddleware.js           V
+│
+├── Controllers
+│   ├── authController.js                 V
+│   ├── userController.js                 V
+│   ├── departmentController.js           V
+│   ├── employeeController.js             V
+│   └── shiftController.js                V
+│
+├── Client
+│   ├── login.html                        V
+│   ├── menu.html                         V
+│   ├── employees.html                    V
+│   ├── editEmployee.html                 V
+│   ├── newEmployee.html                  V
+│   ├── departments.html                  V
+│   ├── editDepartment.html               V
+│   ├── newDepartment.html                V
+│   ├── shifts.html                       V
+│   ├── users.html                        V
+│   └── styles.css
+│
+└── index.js                             V

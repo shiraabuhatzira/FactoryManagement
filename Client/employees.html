@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="getEmployees()">
+    
+    <div class="container">
+        <h1>Employees</h1>
+        <h2 id="fullName"></h2>
+        
+        <a href="menu.html">Back to Menu</a>
+        <a href="./newEmployee.html">New Employee</a>
+
+        <select id="departmentsDropdown" onchange="filterEmployees()"></select>
+        <table id="employeesTable">
+            <tr>
+                <th>Full Name</th>
+                <th>Department</th>
+                <th>Shifts</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        /**
+         * Fetches and displays employees and departments when the page loads.
+         * Sets the user's full name and fetches the employees and departments from the server.
+         */
+        async function getEmployees() {
+            const fullName = sessionStorage.getItem("fullName");
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`;
+            
+            const token = sessionStorage.getItem("token");
+
+            if (!token) {
+                window.location.href = "./login.html";
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/employees", {
+                    method: "GET",
+                    headers: { "x-access-token": token }
+                });
+
+                const employees = await response.json();
+
+                addEmployeesToTable(employees);
+
+                await loadDepartments();
+            } catch (err) {
+                console.log(err.message);
+            }
+        }
+
+        /**
+         * Fetches the list of departments and populates the departments dropdown.
+         */
+        async function loadDepartments() {
+            const token = sessionStorage.getItem("token");
+
+            const response = await fetch("http://localhost:8000/departments", {
+                method: "GET",
+                headers: { "x-access-token": token }
+            });
+
+            const departments = await response.json();
+            const departmentsDropdown = document.getElementById("departmentsDropdown");
+
+            departmentsDropdown.innerHTML = "<option value=''>All</option>";
+
+            departments.forEach(department => {
+                const option = document.createElement("option");
+                option.value = department._id;
+                option.textContent = department.name;
+                departmentsDropdown.appendChild(option);
+            });
+        }
+
+        /**
+         * Filters employees based on the selected department and updates the employees table.
+         */
+        async function filterEmployees() {
+            const departmentId = document.getElementById("departmentsDropdown").value;
+
+            const token = sessionStorage.getItem("token");
+            
+            const url = "http://localhost:8000/employees";
+            
+            const response = await fetch(url, {
+                method: "GET",
+                headers: { "x-access-token": token }
+            });
+
+            const employees = await response.json();
+            
+            let filteredEmployees = employees;
+            if (departmentId) {
+                filteredEmployees = employees.filter(employee => employee.departmentID._id === departmentId);
+            }
+            
+            addEmployeesToTable(filteredEmployees);
+        }
+
+        /**
+         * Populates the employees table with the provided employee data.
+         * @param {Array} employees - The list of employees to display.
+         */
+        function addEmployeesToTable(employees) {
+            const employeesTable = document.getElementById("employeesTable");
+
+            employeesTable.innerHTML = `
+                <tr>
+                    <th>Full Name</th>
+                    <th>Department</th>
+                    <th>Shifts</th>
+                </tr>
+            `;
+
+            employees.forEach(employee => {
+                const employeeTr = document.createElement("tr");
+                const employeeTdName = document.createElement("td");
+                const employeeTdDepartment = document.createElement("td");
+                const employeeTdShifts = document.createElement("td");
+
+                employeeTdName.innerText = `${employee.firstName} ${employee.lastName}`;
+                employeeTdName.style.cursor = "pointer";
+                employeeTdName.onclick = () => {
+                    sessionStorage.setItem("employeeId", employee._id);
+                    window.location.href = "./editEmployee.html";
+                };
+
+                employeeTdDepartment.innerText = employee.departmentID ? employee.departmentID.name : "No Department";
+                employeeTdDepartment.style.cursor = "pointer";
+                employeeTdDepartment.onclick = () => {
+                    sessionStorage.setItem("departmentId", employee.departmentID._id);
+                    window.location.href = "./editDepartment.html";
+                };
+
+                employeeTdShifts.innerHTML = employee.shifts.map(shift => {
+                    return `<div>${new Date(shift.date).toLocaleDateString()} ${shift.startingHour}:00 - ${shift.endingHour}:00</div>`;
+                }).join("");
+
+                employeeTr.appendChild(employeeTdName);
+                employeeTr.appendChild(employeeTdDepartment);
+                employeeTr.appendChild(employeeTdShifts);
+
+                employeesTable.appendChild(employeeTr);
+            });
+        }
+    </script>
+
+</body>
+</html>

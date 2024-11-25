@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>New Employee</title> 
+    <link rel="stylesheet" href="styles.css"> 
+</head>
+<body onload="loadDepartments()"> 
+
+    <div class="container"> 
+        <h1 id="fullName"></h1>
+
+        <form> 
+            <input id="firstName" type="text" placeholder="First Name" required> <br> 
+            <input id="lastName" type="text" placeholder="Last Name" required> <br> 
+            <input id="startWorkYear" type="number" placeholder="Start Work Year" required> <br> 
+            <select id="departmentDropdown"></select> <br> 
+            <button type="button" onclick="saveEmployee()">Save</button> 
+            <button type="button" onclick="cancel()">Cancel</button> 
+        </form>
+    </div>
+
+    <script>
+        /**
+         * Loads the list of departments and populates the department dropdown.
+         */
+        async function loadDepartments() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/departments", {
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const departments = await response.json(); 
+            const departmentDropdown = document.getElementById("departmentDropdown"); 
+            departments.forEach(department => { 
+                const option = document.createElement("option"); 
+                option.value = department._id; 
+                option.textContent = department.name; 
+                departmentDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Saves the new employee data to the server.
+         */
+        async function saveEmployee() {
+            const firstName = document.getElementById("firstName").value; 
+            const lastName = document.getElementById("lastName").value; 
+            const startWorkYear = document.getElementById("startWorkYear").value; 
+            const departmentID = document.getElementById("departmentDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch("http://localhost:8000/employees", { 
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ firstName, lastName, startWorkYear, departmentID }) 
+            });
+
+            window.location.href = "./employees.html"; 
+        }
+
+        /**
+         * Cancels the action and redirects to the employees page.
+         */
+        function cancel() {
+            window.location.href = "./employees.html"; 
+        }
+    </script>
+
+</body>
+</html>

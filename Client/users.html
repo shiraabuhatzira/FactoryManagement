@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="getUsers()">
+    <div class="container">
+        <h1>Users</h1>
+        <h2 id="fullName"></h2>
+
+        <a href="menu.html">Back to Menu</a>
+
+        <table id="usersTable">
+            <tr>
+                <th>User ID</th>
+                <th>Full Name</th>
+                <th>Num Of Actions</th>
+                <th>Actions Allowed Today</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        /**
+         * Function to get the list of users from the server and display them in the table.
+         */
+        async function getUsers() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const token = sessionStorage.getItem("token"); 
+
+            if (!token) { 
+                window.location.href = "./login.html";
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/users", {
+                    method: "GET",
+                    headers: { "x-access-token": token } 
+                });
+
+                const users = await response.json(); 
+                addUsersToTable(users); 
+            } catch (err) {
+                console.log(err.message); 
+            }
+        }
+
+        /**
+         * Function to add the list of users to the table.
+         * @param {Array} users - The list of users to add to the table.
+         */
+        function addUsersToTable(users) {
+            const usersTable = document.getElementById("usersTable"); 
+            usersTable.innerHTML = `
+                <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Num Of Actions</th>
+                    <th>Actions Allowed Today</th>
+                </tr>
+            `; 
+
+            users.forEach(user => { 
+                const userTr = document.createElement("tr"); 
+
+                const userTdId = document.createElement("td"); 
+                const userTdFullName = document.createElement("td"); 
+                const userTdNumOfActions = document.createElement("td"); 
+                const userTdActionsAllowedToday = document.createElement("td"); 
+
+                userTdId.innerText = user.userId; 
+                userTdFullName.innerText = user.fullName; 
+                userTdNumOfActions.innerText = user.numOfActions; 
+                userTdActionsAllowedToday.innerText = user.numOfActions - user.actionsPerformed; 
+
+                userTr.appendChild(userTdId); 
+                userTr.appendChild(userTdFullName); 
+                userTr.appendChild(userTdNumOfActions); 
+                userTr.appendChild(userTdActionsAllowedToday); 
+
+                usersTable.appendChild(userTr); 
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Login</h1>
+        <form>
+            <input id="username" type="text" placeholder="Username" required> <br>
+            <input id="email" type="email" placeholder="Email" required> <br>
+
+             <!-- Error message for incorrect username/password -->
+             <div id="errorMessage" class="error-message" style="display: none;">
+                Incorrect username or password. Please try again.
+            </div>
+
+            <!-- Message element that appears when max actions are reached -->
+            <div id="maxActionMessage" class="alert-message" style="display: none;">
+               You have reached the maximum actions allowed for today.
+               </br>
+               Try again tomorrow.
+            </div>
+
+            <button type="button" onclick="login()">Login</button>
+        </form>
+    </div>
+
+    <script>
+        /**
+         * Function to handle the login process.
+         * Fetches the username and email from input fields, 
+         * sends a POST request to the server for authentication,
+         * stores the received token and full name in session storage,
+         * and redirects the user to the employees page.
+         */
+        async function login() {
+            const username = document.getElementById("username").value;
+            const email = document.getElementById("email").value;
+
+            // Hide any previous error messages
+            document.getElementById("errorMessage").style.display = "none";
+            document.getElementById("maxActionMessage").style.display = "none";
+
+            // Make a POST request to the login endpoint.
+            const response = await fetch("http://localhost:8000/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username, email })
+            });
+
+            const status = await response.json();
+
+            if (!status.success) {
+                // Show error message if login fails
+                document.getElementById("errorMessage").style.display = "block";
+                return;
+            }
+
+            // Check if max actions are reached
+            if (status.maxActionsReached) {
+                document.getElementById("maxActionMessage").style.display = "block";
+                return;
+            }
+
+            // If login is successful and max actions are not reached, proceed
+            // Store the token and full name in session storage.
+            sessionStorage.setItem("token", status.token);
+            sessionStorage.setItem("fullName", status.user.fullName);
+
+            window.location.href = "./menu.html";
+        }
+    </script>
+    
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Department</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="loadDepartmentData()">
+
+    <div class="container">
+        <h1 id="fullName"></h1> 
+
+        <form>
+            <input id="departmentName" type="text" placeholder="Department Name" required> <br>
+            <select id="managerDropdown"></select> <br>
+            <button type="button" onclick="updateDepartment()">Update</button>
+            <button type="button" onclick="deleteDepartment()">Delete</button>
+        </form>
+
+        <h2>Employees</h2>
+        <table id="employeesTable">
+            <tr>
+                <th>Full Name</th>
+            </tr>
+        </table>
+
+        <select id="employeeDropdown"></select> <br>
+
+        <button onclick="addEmployeeToDepartment()">Add Employee</button>
+    </div>
+
+    <script>
+        /**
+         * Loads the department data and populates the form.
+         */
+        async function loadDepartmentData() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const departmentId = sessionStorage.getItem("departmentId"); 
+            if (!departmentId) { 
+                window.location.href = "./departments.html";
+            }
+
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch(`http://localhost:8000/departments/${departmentId}`, {
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const department = await response.json(); 
+            document.getElementById("departmentName").value = department.name; 
+            await loadManagers(department.manager ? department.manager._id : null); 
+            addEmployeesToTable(department.employees); 
+            await loadEmployees(); 
+        }
+
+        /**
+         * Loads the managers and populates the manager dropdown.
+         * @param {String} selectedManagerId - The ID of the currently selected manager.
+         */
+        async function loadManagers(selectedManagerId) {
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/employees", {
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const employees = await response.json(); 
+            const managerDropdown = document.getElementById("managerDropdown"); 
+            managerDropdown.innerHTML = "<option value=''>No Manager</option>"; 
+            employees.forEach(employee => { 
+                const option = document.createElement("option"); 
+                option.value = employee._id; 
+                option.textContent = `${employee.firstName} ${employee.lastName}`; 
+                if (employee._id === selectedManagerId) { 
+                    option.selected = true; 
+                }
+                managerDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Updates the department with the new data from the form.
+         */
+        async function updateDepartment() {
+            const departmentId = sessionStorage.getItem("departmentId"); 
+            const name = document.getElementById("departmentName").value; 
+            const manager = document.getElementById("managerDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/departments/${departmentId}`, {
+                method: "PUT", 
+                headers: {
+                    "Content-Type": "application/json", 
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ name, manager }) 
+            });
+
+            window.location.href = "./departments.html"; 
+        }
+
+        /**
+         * Deletes the department.
+         */
+        async function deleteDepartment() {
+            const departmentId = sessionStorage.getItem("departmentId"); 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/departments/${departmentId}`, {
+                method: "DELETE", 
+                headers: { "x-access-token": token } 
+            });
+
+            window.location.href = "./departments.html"; 
+        }
+
+        /**
+         * Loads all employees and populates the employee dropdown.
+         */
+        async function loadEmployees() {
+            const token = sessionStorage.getItem("token"); 
+            const response = await fetch("http://localhost:8000/employees", {
+                method: "GET", 
+                headers: { "x-access-token": token } 
+            });
+
+            const employees = await response.json(); 
+            const employeeDropdown = document.getElementById("employeeDropdown"); 
+            employees.forEach(employee => { 
+                const option = document.createElement("option"); 
+                option.value = employee._id; 
+                option.textContent = `${employee.firstName} ${employee.lastName}`; 
+                employeeDropdown.appendChild(option); 
+            });
+        }
+
+        /**
+         * Adds the selected employee to the department.
+         */
+        async function addEmployeeToDepartment() {
+            const departmentId = sessionStorage.getItem("departmentId"); 
+            const employeeId = document.getElementById("employeeDropdown").value; 
+
+            const token = sessionStorage.getItem("token"); 
+            await fetch(`http://localhost:8000/departments/${departmentId}/employees`, {
+                method: "POST", 
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-access-token": token 
+                },
+                body: JSON.stringify({ employeeId }) 
+            });
+
+            window.location.href = "./departments.html"; 
+        }
+
+        /**
+         * Adds employees to the table.
+         * @param {Array} employees - The list of employees to add to the table.
+         */
+        function addEmployeesToTable(employees) {
+            const employeesTable = document.getElementById("employeesTable");
+            employees.forEach(employee => { 
+                const employeeTr = document.createElement("tr"); 
+
+                const employeeTdFullName = document.createElement("td"); 
+                employeeTdFullName.innerText = `${employee.firstName} ${employee.lastName}`; 
+
+                employeeTr.appendChild(employeeTdFullName); 
+                employeesTable.appendChild(employeeTr); 
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Departments</title> 
+    <link rel="stylesheet" href="styles.css"> 
+</head>
+<body onload="getDepartmentsAndEmployees()"> 
+
+    <div class="container"> 
+        <h1>Departments</h1> 
+
+        <h2 id="fullName"></h2> 
+
+        <a href="menu.html">Back to Menu</a>
+        <a href="./newDepartment.html">New Department</a> 
+
+        <table id="departmentsTable"> 
+            <tr>
+                <th>Department Name</th> 
+                <th>Manager</th> 
+                <th>Employees</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        /**
+         * Fetches the list of departments and employees, then populates the table.
+         */
+        async function getDepartmentsAndEmployees() {
+            const fullName = sessionStorage.getItem("fullName"); 
+            document.getElementById("fullName").innerText = `Welcome, ${fullName}`; 
+
+            const token = sessionStorage.getItem("token"); 
+
+            if (!token) { 
+                window.location.href = "./login.html"; 
+            }
+
+            try {
+                // Fetch departments
+                const departmentResponse = await fetch("http://localhost:8000/departments", {
+                    method: "GET", 
+                    headers: { "x-access-token": token } 
+                });
+                const departments = await departmentResponse.json(); 
+
+                // Fetch employees
+                const employeeResponse = await fetch("http://localhost:8000/employees", {
+                    method: "GET", 
+                    headers: { "x-access-token": token } 
+                });
+                const employees = await employeeResponse.json(); 
+
+                addDepartmentsToTable(departments, employees); 
+            } catch (err) {
+                console.log(err.message); 
+            }
+        }
+
+        /**
+         * Populates the departments table with the provided department and employee data.
+         * @param {Array} departments - The list of departments to display.
+         * @param {Array} employees - The list of employees to display.
+         */
+        function addDepartmentsToTable(departments, employees) {
+            const departmentsTable = document.getElementById("departmentsTable"); 
+            departmentsTable.innerHTML = `
+                <tr>
+                    <th>Department Name</th> <!-- Table header for department name. -->
+                    <th>Manager</th> <!-- Table header for manager. -->
+                    <th>Employees</th> <!-- Table header for employees. -->
+                </tr>
+            `;
+
+            departments.forEach(department => { 
+                const departmentTr = document.createElement("tr"); 
+
+                const departmentTdName = document.createElement("td"); 
+                const departmentTdManager = document.createElement("td"); 
+                const departmentTdEmployees = document.createElement("td"); 
+
+                departmentTdName.innerText = department.name; 
+                departmentTdName.style.cursor = "pointer"; 
+                departmentTdName.onclick = () => { 
+                    sessionStorage.setItem("departmentId", department._id); 
+                    window.location.href = "./editDepartment.html"; 
+                };
+
+                departmentTdManager.innerText = department.manager ? `${department.manager.firstName} ${department.manager.lastName}` : "No Manager"; 
+
+                const departmentEmployees = employees.filter(employee => employee.departmentID?._id === department._id);
+                departmentTdEmployees.innerHTML = departmentEmployees.map(employee => {
+                    return `<div>${employee.firstName} ${employee.lastName}</div>`; 
+                }).join(""); 
+
+                departmentTr.appendChild(departmentTdName); 
+                departmentTr.appendChild(departmentTdManager); 
+                departmentTr.appendChild(departmentTdEmployees); 
+
+                departmentsTable.appendChild(departmentTr); 
+            });
+        }
+    </script>
+
+</body>
+</html>
